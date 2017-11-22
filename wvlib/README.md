@@ -1,4 +1,5 @@
-#wvlib - word vector library
+# wvlib 
+word vector library
 
 Author: [Sampo Pyysalo](https://github.com/spyysalo)
 
