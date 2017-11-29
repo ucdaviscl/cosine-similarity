@@ -1,4 +1,4 @@
-import os, sys, time, gensim
+import os, sys, time, gensim, nltk
 
 from gensim.models import Word2Vec
 from gensim.models.word2vec import LineSentence
@@ -24,16 +24,23 @@ if not (os.path.isfile(model_path)):
     model.wv.save_word2vec_format('model.txt', binary=False)
     del model
 else:
-    # Get five nearest neighbors for each word
+    # Generate sentences for each unsimplified sentence 
     print 'Generating sentences...'
     wv = wvlib.load(model_path)
     f = open('test.txt', 'r')
+    # Create a 2D array with each row containing a sentence with nearest neighbors
+    sentences = []
     for line in f:
+        sentence = []
         for word in line.split():
-            print word
-            for i in range (0,3):
-                print wv.nearest(word)[i]
-        # end of sentence
+            words = []
+            words.append(word)
+            # Get nearest neighbors for each word
+            for i in range (0,1):
+                nearest = wv.nearest(word)[i]
+                words.append(nearest[0])
+            sentence.append(words)
+        sentences.append(sentence)         
 
 # Print execution time
 print '--- Execution time: %s minutes ---' % ((time.time() - start_time) / 60)
