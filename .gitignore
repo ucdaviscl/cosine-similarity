@@ -1,2 +1,7 @@
+/model
 *.txt
 *.pyc
+<<<<<<< HEAD
+=======
+*.swp
+>>>>>>> 9fa0379d3efdddb45e80112fc3c5e65ba309be26
