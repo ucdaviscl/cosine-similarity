@@ -4,27 +4,29 @@ import time
 import gensim
 import nltk
 import itertools
+import heapq
 
 from gensim.models import Word2Vec
 from gensim.models.word2vec import LineSentence
 from nltk import pos_tag, word_tokenize
 from itertools import permutations
 
-# Import wvlib
-sys.path.insert(0, '/Users/richard/Desktop/Folder/Projects/cosine_similarity/wvlib')
-import wvlib
-
 start_time = time.time()
 
+# Import wvlib
+sys.path.insert(0, 'wvlib')
+import wvlib
+
+# Constants
+DISTANCE_NUM = 0.9
+NEIGHBOR_NUM = 3
+CANDIDATE_NUM = 5
+
 # Specify paths
-path = '/Users/richard/Desktop/Folder/Projects/cosine_similarity'
-model_path = '/Users/richard/Desktop/Folder/Projects/cosine_similarity/test_model.txt'
-token_path = '/Users/richard/Desktop/Folder/Projects/cosine_similarity/tokens.txt'
-
+path = '.'
+model_path = 'test_model.txt'
+token_path = 'tokens.txt'
 os.chdir(path)
-
-# Initialize cosine similarity distance
-distance = 0.9
 
 if not (os.path.isfile(model_path)):
     # Train a word2vec model
@@ -40,36 +42,44 @@ else:
     for line in f:
         sent = word_tokenize(line)
         sent_len = len(sent)
-        sent_tag = []
-        # Loop through length of the sentence
-        for x in range(0, len(sent)):
-            print 'Word:', sent[x], 'Tag:', nltk.pos_tag(nltk.word_tokenize(sent[x]))[0][1]
-            sent_tag.append(nltk.pos_tag(nltk.word_tokenize(sent[x]))[0][1])
+        # Loop through length of sentence
+        for i in range(0, len(sent)):
             # Get nearest neighbors for each word
-            for i in range(0, 3):
-                nearest = wv.nearest(sent[x])[i]
-                inside = False # check if only word
-                # Absolute cut-off for cosine similarity distance
-                if (nearest[1] >= distance):
+            for j in range(0, NEIGHBOR_NUM):
+                nearest = wv.nearest(sent[i])[j]
+                # Absolute cut-off for cosine distance
+                if (nearest[1] >= DISTANCE_NUM):
                     # Filter open-class words
-                    word_tag = nltk.pos_tag(nltk.word_tokenize(sent[x]))
+                    word_tag = nltk.pos_tag(nltk.word_tokenize(sent[i]))
                     neighbor_tag = nltk.pos_tag(nltk.word_tokenize(nearest[0]))
                     if word_tag[0][1] and neighbor_tag[0][1] in {'NN','NNS','RB','RBR','RBS',
                                                                  'VB','VBD','VBG','VBN','VBP',
                                                                  'VBZ','JJ','JJR','JJS'}:
-                        sent.append(nearest[0])
-                        print nearest[0], neighbor_tag[0][1]
-        print sent_tag
-        # Generate all possible sentences
+                        word = []
+                        word.append(nearest[0]) # word
+                        word.append(nearest[1]) # distance score
+                        sent.append(word)
+        heap = []
+        # Generate all possible sentence candidates by combining and averaging word vectors
+        # Each sentence is the average of its words
         for sent_gen in itertools.permutations(sent, sent_len):
-            count = 0
-            print sent_gen
-            # for i in range(0, len(sent_gen)):
-            #     if nltk.pos_tag(sent_gen)[i][1] == sent_tag[i]:
-            #         count = count + 1
-            # if count == sent_len:
-            #     print nltk.pos_tag(sent_gen)
-            # count = 0
+            temp = []
+            score = 0
+            for word in sent_gen:
+                if isinstance(word, list):
+                    score += word[1]
+                    temp.append(word[0])
+                else:
+                    score += 1
+                    temp.append(word)
+            average = score/sent_len
+            # Ignore reordering of original words
+            if (average != 1):
+                heapq.heappush(heap, (average, temp))
+        # Output top CANDIDATE_NUM sentences
+        for k in heapq.nlargest(CANDIDATE_NUM, heap):
+            candidate = ' '.join(k[1])
+            print candidate, k[0]
 
 # Print execution time
 print '\n--- Execution time: %.4s minutes ---' % ((time.time()-start_time)/60)
