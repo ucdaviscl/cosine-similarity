@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+"""
+Author: Richard Kim
+
+Text simplification
+
+Generate possible sentence candidates by combining and averaging word vectors.
+"""
+
 import os
 import sys
 import time
