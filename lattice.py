@@ -96,32 +96,45 @@ def main():
                                 G.add_edge(prev_node, neighbor_node, weight=-round(nearest[1], 5))
                                 for t in range(0, len(temp)):
                                     G.add_edge(temp[t], neighbor_node, weight=-round(nearest[1], 5))
+
             # Add END node
             G.add_node("END")
             G.add_edge(node, "END", weight=-1)
             for w in range(0, len(words)):
                 G.add_edge(words[w], "END", weight=-1)
 
-            # Returns sentence candidates from the lattice in order
-            # We find the shortest path because we use negative weights for the edges
+            f = open('output.txt', 'a+')
+            candidate_list = []
+
+            # Write sentence candidates from the lattice to file
+            # We find the shortest path because we use negative weights
             for path in k_shortest_paths(G, "START", "END", CANDIDATE_NUM):
                 H = G.subgraph(path)
-                print path, nx.shortest_path_length(H, "START", "END", weight='weight')
+                # Candidate sentences only
+                if (-(len(sent) + 1) != nx.shortest_path_length(H, "START", "END", weight='weight')):
+                    candidate = [word[:-1] for word in path]
+                    candidate = ' '.join(candidate[1:-1])
+                    candidate_list.append(candidate)
+
                 # Draw sub-lattice
-                pos = nx.spring_layout(H)
-                new_labels = dict(map(lambda x:((x[0],x[1]), str(x[2]['weight'])), H.edges(data=True)))
-                nx.draw_networkx(H, pos=pos, font_weight='bold', font_size=15, edge_color='g')
-                nx.draw_networkx_edge_labels(H, pos=pos, font_weight='bold', width=4, edge_labels=new_labels)
-                nx.draw_networkx_edges(H, pos, with_labels=True, width=2, arrows=False)
-                plt.show()
+                # pos = nx.spring_layout(H)
+                # new_labels = dict(map(lambda x:((x[0],x[1]), str(x[2]['weight'])), H.edges(data=True)))
+                # nx.draw_networkx(H, pos=pos, font_weight='bold', font_size=15, edge_color='g')
+                # nx.draw_networkx_edge_labels(H, pos=pos, font_weight='bold', width=4, edge_labels=new_labels)
+                # nx.draw_networkx_edges(H, pos, with_labels=True, width=2, arrows=False)
+                # plt.show()
+
+            for sent in range(0,len(candidate_list)):
+                f.write(candidate_list[sent] + '\n')
+            f.close()
 
             # Draw lattice
-            pos = nx.spring_layout(G)
-            new_labels = dict(map(lambda x:((x[0],x[1]), str(x[2]['weight'])), G.edges(data=True)))
-            nx.draw_networkx(G, pos=pos, font_weight='bold', font_size=15, edge_color='g')
-            nx.draw_networkx_edge_labels(G, pos=pos, font_weight='bold', width=4, edge_labels=new_labels)
-            nx.draw_networkx_edges(G, pos, with_labels=True, width=2, arrows=False)
-            plt.show()
+            # pos = nx.spring_layout(H)
+            # new_labels = dict(map(lambda x:((x[0],x[1]), str(x[2]['weight'])), H.edges(data=True)))
+            # nx.draw_networkx(H, pos=pos, font_weight='bold', font_size=15, edge_color='g')
+            # nx.draw_networkx_edge_labels(H, pos=pos, font_weight='bold', width=4, edge_labels=new_labels)
+            # nx.draw_networkx_edges(H, pos, with_labels=True, width=2, arrows=False)
+            # plt.show()
 
 # Define the main function
 if __name__ == "__main__":
