@@ -20,6 +20,7 @@ from gensim.models import Word2Vec
 from gensim.models.word2vec import LineSentence
 from nltk import pos_tag, word_tokenize
 from itertools import islice
+from string import digits
 
 # Initialize execution time
 start_time = time.time()
@@ -31,7 +32,7 @@ import wvlib
 # Constants
 DISTANCE_NUM = 0.9
 NEIGHBOR_NUM = 3
-CANDIDATE_NUM = 10
+CANDIDATE_NUM = 3
 
 # Specify paths
 path = '.'
@@ -112,10 +113,9 @@ def main():
                 H = G.subgraph(path)
                 # Candidate sentences only
                 if (-(len(sent) + 1) != nx.shortest_path_length(H, "START", "END", weight='weight')):
-                    candidate = [word[:-1] for word in path]
+                    candidate = [''.join([w for w in word if not w.isdigit()]) for word in path]
                     candidate = ' '.join(candidate[1:-1])
                     candidate_list.append(candidate)
-
                 # Draw sub-lattice
                 # pos = nx.spring_layout(H)
                 # new_labels = dict(map(lambda x:((x[0],x[1]), str(x[2]['weight'])), H.edges(data=True)))
