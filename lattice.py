@@ -20,6 +20,7 @@ from gensim.models import Word2Vec
 from gensim.models.word2vec import LineSentence
 from nltk import pos_tag, word_tokenize
 from itertools import islice
+from string import digits
 
 # Initialize execution time
 start_time = time.time()
@@ -119,6 +120,7 @@ def main():
                         candidate_list.append('-------')
                     continue
                 if (-(len(sent) + 1) != nx.shortest_path_length(H, "START", "END", weight='weight')):
+<<<<<<< HEAD
                     for word in path:
                         if not word.isdigit():
                             candidate.append(word.rstrip('1234567890'))
@@ -130,6 +132,11 @@ def main():
                 else:
                     candidate_list.append('-------')
 
+=======
+                    candidate = [''.join([w for w in word if not w.isdigit()]) for word in path]
+                    candidate = ' '.join(candidate[1:-1])
+                    candidate_list.append(candidate)
+>>>>>>> 823f4bbe9b5313a12c62e1e6aa10f4fc1198258a
                 # Draw sub-lattice
                 # pos = nx.spring_layout(H)
                 # new_labels = dict(map(lambda x:((x[0],x[1]), str(x[2]['weight'])), H.edges(data=True)))
