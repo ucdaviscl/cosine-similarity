@@ -27,16 +27,17 @@ start_time = time.time()
 # Import wvlib
 sys.path.insert(0, 'wvlib')
 import wvlib
+from wvlib import Vocabulary
 
 # Constants
-DISTANCE_NUM = 0.9
+DISTANCE_NUM = 0.80
 NEIGHBOR_NUM = 3
-CANDIDATE_NUM = 10
+CANDIDATE_NUM = 3
 
 # Specify paths
 path = '.'
 model_path = 'test_model.txt'
-token_path = 'tokens.txt'
+token_path = '../compling/tokenizer_tokens.txt'
 os.chdir(path)
 
 def k_shortest_paths(G, source, target, k, weight=None):
@@ -51,7 +52,7 @@ def main():
         del model
     else:
         # Generate sentences for each unsimplified sentence
-        wv = wvlib.load(model_path)
+        wv = wvlib.load(model_path).normalize()
         f = open('test.txt', 'r')
         # Build lattice graph for every sentence
         for line in f:
@@ -76,26 +77,27 @@ def main():
                 temp = words
                 words = []
                 # Get nearest neighbors for each word
-                for j in range(0, NEIGHBOR_NUM):
-                    nearest = wv.nearest(sent[i])[j]
-                    # Absolute cut-off for cosine distance
-                    if (nearest[1] >= DISTANCE_NUM):
-                        # Filter open-class words
-                        word_tag = nltk.pos_tag(nltk.word_tokenize(sent[i]))
-                        neighbor_tag = nltk.pos_tag(nltk.word_tokenize(nearest[0]))
-                        if word_tag[0][1] and neighbor_tag[0][1] in {'NN','NNS','RB','RBR','RBS',
-                                                                     'VB','VBD','VBG','VBN','VBP',
-                                                                     'VBZ','JJ','JJR','JJS'}:
-                            neighbor_node = nearest[0] + str(j) # Unique identifier for nodes
-                            words.append(neighbor_node)
-                            G.add_node(neighbor_node)
-                            # Connect edges
-                            if (i == 0):
-                                G.add_edge("START", neighbor_node, weight=-round(nearest[1], 5))
-                            else:
-                                G.add_edge(prev_node, neighbor_node, weight=-round(nearest[1], 5))
-                                for t in range(0, len(temp)):
-                                    G.add_edge(temp[t], neighbor_node, weight=-round(nearest[1], 5))
+                if (sent[i] in wv.vocab):
+                    for j in range(0, NEIGHBOR_NUM):
+                        nearest = wv.nearest(sent[i])[j]
+                        # Absolute cut-off for cosine distance
+                        if (nearest[1] >= DISTANCE_NUM):
+                            # Filter open-class words
+                            word_tag = nltk.pos_tag(nltk.word_tokenize(sent[i]))
+                            neighbor_tag = nltk.pos_tag(nltk.word_tokenize(nearest[0]))
+                            if word_tag[0][1] and neighbor_tag[0][1] in {'NN','NNS','RB','RBR','RBS',
+                                                                         'VB','VBD','VBG','VBN','VBP',
+                                                                         'VBZ','JJ','JJR','JJS'}:
+                                neighbor_node = nearest[0] + str(j) # Unique identifier for nodes
+                                words.append(neighbor_node)
+                                G.add_node(neighbor_node)
+                                # Connect edges
+                                if (i == 0):
+                                    G.add_edge("START", neighbor_node, weight=-round(nearest[1], 5))
+                                else:
+                                    G.add_edge(prev_node, neighbor_node, weight=-round(nearest[1], 5))
+                                    for t in range(0, len(temp)):
+                                        G.add_edge(temp[t], neighbor_node, weight=-round(nearest[1], 5))
 
             # Add END node
             G.add_node("END")
@@ -111,10 +113,22 @@ def main():
             for path in k_shortest_paths(G, "START", "END", CANDIDATE_NUM):
                 H = G.subgraph(path)
                 # Candidate sentences only
+                candidate = []
+                if (len(k_shortest_paths(G, "START", "END", CANDIDATE_NUM)) == 1): # sentences with no candidates
+                    for c in range(0, CANDIDATE_NUM):
+                        candidate_list.append('-------')
+                    continue
                 if (-(len(sent) + 1) != nx.shortest_path_length(H, "START", "END", weight='weight')):
-                    candidate = [word[:-1] for word in path]
+                    for word in path:
+                        if not word.isdigit():
+                            candidate.append(word.rstrip('1234567890'))
+                        else:
+                            candidate.append(word)
+                    candidate = [c.decode('utf-8') for c in candidate]
                     candidate = ' '.join(candidate[1:-1])
                     candidate_list.append(candidate)
+                else:
+                    candidate_list.append('-------')
 
                 # Draw sub-lattice
                 # pos = nx.spring_layout(H)
@@ -125,7 +139,7 @@ def main():
                 # plt.show()
 
             for sent in range(0,len(candidate_list)):
-                f.write(candidate_list[sent] + '\n')
+                f.write(candidate_list[sent].encode('utf-8') + '\n')
             f.close()
 
             # Draw lattice
