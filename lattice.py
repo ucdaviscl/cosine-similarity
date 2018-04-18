@@ -9,6 +9,7 @@ Build lattice of original and neighboring words for each sentence.
 
 import os
 import sys
+import re
 import time
 import gensim
 import nltk
@@ -55,8 +56,13 @@ def main():
         # Generate sentences for each unsimplified sentence
         wv = wvlib.load(model_path).normalize()
         f = open('test.txt', 'r')
+        line_num = sum(1 for _ in f)
+        f.seek(0)
+        count = 0
         # Build lattice graph for every sentence
         for line in f:
+            count += 1
+            print "Sentence", count, "of", line_num
             sent = word_tokenize(line)
             G = nx.DiGraph()
             G.add_node("START")
@@ -64,13 +70,13 @@ def main():
             words = []
             # Loop through length of sentence
             for i in range(0, len(sent)):
-                node = sent[i] + str(i) # Unique identifier for nodes
+                node = sent[i] + '*' + str(i) + '*' # Unique identifier for nodes
                 G.add_node(node)
                 # Connect edges
                 if (i == 0):
                     G.add_edge("START", node, weight=-1)
                 else:
-                    prev_node = sent[i - 1] + str(i - 1)
+                    prev_node = sent[i - 1] + '*' + str(i - 1) + '*'
                     G.add_edge(prev_node, node, weight=-1)
                     for w in range(0, len(words)):
                         G.add_edge(words[w], node, weight=-1)
@@ -89,7 +95,7 @@ def main():
                             if word_tag[0][1] and neighbor_tag[0][1] in {'NN','NNS','RB','RBR','RBS',
                                                                          'VB','VBD','VBG','VBN','VBP',
                                                                          'VBZ','JJ','JJR','JJS'}:
-                                neighbor_node = nearest[0] + str(j) # Unique identifier for nodes
+                                neighbor_node = nearest[0] + '*' + str(j) + '*' # Unique identifier for nodes
                                 words.append(neighbor_node)
                                 G.add_node(neighbor_node)
                                 # Connect edges
@@ -120,24 +126,15 @@ def main():
                         candidate_list.append('-------')
                     continue
                 if (-(len(sent) + 1) != nx.shortest_path_length(H, "START", "END", weight='weight')):
-<<<<<<< HEAD
-                    for word in path:
-                        if not word.isdigit():
-                            candidate.append(word.rstrip('1234567890'))
-                        else:
-                            candidate.append(word)
+                    for word in path: # remove unique identifiers
+                        candidate.append(re.sub(r'\*.*\*','',word))
                     candidate = [c.decode('utf-8') for c in candidate]
                     candidate = ' '.join(candidate[1:-1])
                     candidate_list.append(candidate)
                 else:
                     candidate_list.append('-------')
 
-=======
-                    candidate = [''.join([w for w in word if not w.isdigit()]) for word in path]
-                    candidate = ' '.join(candidate[1:-1])
-                    candidate_list.append(candidate)
->>>>>>> 823f4bbe9b5313a12c62e1e6aa10f4fc1198258a
-                # Draw sub-lattice
+                # # Draw sub-lattice
                 # pos = nx.spring_layout(H)
                 # new_labels = dict(map(lambda x:((x[0],x[1]), str(x[2]['weight'])), H.edges(data=True)))
                 # nx.draw_networkx(H, pos=pos, font_weight='bold', font_size=15, edge_color='g')
@@ -149,7 +146,7 @@ def main():
                 f.write(candidate_list[sent].encode('utf-8') + '\n')
             f.close()
 
-            # Draw lattice
+            # # Draw lattice
             # pos = nx.spring_layout(H)
             # new_labels = dict(map(lambda x:((x[0],x[1]), str(x[2]['weight'])), H.edges(data=True)))
             # nx.draw_networkx(H, pos=pos, font_weight='bold', font_size=15, edge_color='g')
